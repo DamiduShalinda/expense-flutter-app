@@ -13,4 +13,3 @@ class Categories extends Table {
 
   BoolColumn get isIncome => boolean().withDefault(const Constant(false))();
 }
-

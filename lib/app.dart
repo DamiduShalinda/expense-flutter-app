@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'ui/screens/home_screen.dart';
+import 'ui/screens/app_shell.dart';
 import 'ui/theme/app_theme.dart';
+import 'providers/preferences_provider.dart';
 
-class ExpenseApp extends StatelessWidget {
+class ExpenseApp extends ConsumerWidget {
   const ExpenseApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeModeAsync = ref.watch(themeModeProvider);
     return MaterialApp(
       title: 'Expense Manage',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      themeMode: themeModeAsync.value ?? ThemeMode.system,
+      home: const AppShell(),
     );
   }
 }
-

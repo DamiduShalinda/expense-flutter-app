@@ -9,7 +9,8 @@ class Transactions extends Table {
 
   IntColumn get accountId => integer().references(Accounts, #id)();
 
-  IntColumn get categoryId => integer().nullable().references(Categories, #id)();
+  IntColumn get categoryId =>
+      integer().nullable().references(Categories, #id)();
 
   TextColumn get note => text().nullable()();
 
@@ -17,4 +18,3 @@ class Transactions extends Table {
 
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
 }
-

@@ -19,4 +19,3 @@ class Accounts extends Table {
 
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 }
-
