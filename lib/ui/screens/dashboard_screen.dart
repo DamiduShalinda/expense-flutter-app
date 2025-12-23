@@ -7,6 +7,7 @@ import 'package:expense_manage/providers/categories_provider.dart';
 import 'package:expense_manage/providers/dashboard_provider.dart';
 import 'package:expense_manage/providers/preferences_provider.dart';
 import 'package:expense_manage/ui/widgets/amount_text.dart';
+import 'package:expense_manage/ui/widgets/simple_bar_chart.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -53,6 +54,37 @@ class DashboardScreen extends ConsumerWidget {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: LinearProgressIndicator(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: dashboardAsync.when(
+              data: (state) {
+                final values = state.dailyIncomeExpense
+                    .map((d) => (d.income - d.expense).toDouble())
+                    .toList();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Last 7 days',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    SimpleBarChart(values: values),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Net per day (income - expense)',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                );
+              },
+              error: (error, _) => Text('Failed to load chart: $error'),
+              loading: () => const LinearProgressIndicator(),
             ),
           ),
         ),

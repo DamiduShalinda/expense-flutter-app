@@ -6,6 +6,7 @@ import 'package:expense_manage/providers/categories_provider.dart';
 import 'package:expense_manage/providers/repositories_provider.dart';
 import 'package:expense_manage/providers/transactions_provider.dart';
 import 'package:expense_manage/ui/widgets/amount_text.dart';
+import 'package:expense_manage/ui/widgets/simple_bar_chart.dart';
 
 class AccountTransactionsScreen extends ConsumerWidget {
   const AccountTransactionsScreen({super.key, required this.accountId});
@@ -55,56 +56,77 @@ class AccountTransactionsScreen extends ConsumerWidget {
                 );
               }
 
+              final last14 = _lastNDaysNet(items, days: 14);
               final groups = _groupByDay(items);
               final days = groups.keys.toList()..sort((a, b) => b.compareTo(a));
 
-              return ListView.builder(
+              return ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: days.length,
-                itemBuilder: (context, index) {
-                  final day = days[index];
-                  final dayItems = groups[day]!;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Text(
-                          _formatDay(day),
-                          style: Theme.of(context).textTheme.titleSmall,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Text(
+                      'Last 14 days',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SimpleBarChart(
+                              values: last14.map((v) => v.toDouble()).toList(),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Net per day (income - expense)',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
                         ),
                       ),
-                      for (final tx in dayItems)
-                        Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final day in days) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Text(
+                        _formatDay(day),
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    for (final tx in groups[day]!)
+                      Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: ListTile(
+                          title: Text(_titleFor(tx, categoriesById)),
+                          subtitle: Text(
+                            tx.note?.trim().isEmpty ?? true
+                                ? _typeLabel(tx.type)
+                                : '${_typeLabel(tx.type)} • ${tx.note}',
                           ),
-                          child: ListTile(
-                            title: Text(_titleFor(tx, categoriesById)),
-                            subtitle: Text(
-                              tx.note?.trim().isEmpty ?? true
-                                  ? _typeLabel(tx.type)
-                                  : '${_typeLabel(tx.type)} • ${tx.note}',
-                            ),
-                            trailing: AmountText(
-                              _displayAmount(tx, account),
-                              positiveColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              negativeColor: Theme.of(
-                                context,
-                              ).colorScheme.error,
-                              zeroColor: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
+                          trailing: AmountText(
+                            _displayAmount(tx, account),
+                            positiveColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            negativeColor: Theme.of(context).colorScheme.error,
+                            zeroColor: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
-                    ],
-                  );
-                },
+                      ),
+                  ],
+                ],
               );
             },
             error: (error, _) => Center(child: Text('Failed to load: $error')),
@@ -184,4 +206,28 @@ String _formatDay(DateTime day) {
     'Dec',
   ];
   return '${months[day.month - 1]} ${day.day}, ${day.year}';
+}
+
+List<int> _lastNDaysNet(List<Transaction> items, {required int days}) {
+  final now = DateTime.now();
+  final start = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).subtract(Duration(days: days - 1));
+
+  final buckets = List<int>.filled(days, 0);
+  for (final tx in items) {
+    if (tx.isPending) continue;
+    if (tx.type == TransactionType.transfer) continue;
+    final day = DateTime(tx.date.year, tx.date.month, tx.date.day);
+    final idx = day.difference(start).inDays;
+    if (idx < 0 || idx >= days) continue;
+    if (tx.type == TransactionType.income) {
+      buckets[idx] += tx.amount;
+    } else if (tx.type == TransactionType.expense) {
+      buckets[idx] -= tx.amount;
+    }
+  }
+  return buckets;
 }

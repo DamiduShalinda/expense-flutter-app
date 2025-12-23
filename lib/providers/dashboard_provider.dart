@@ -13,12 +13,14 @@ class WeeklyDashboardState {
     required this.end,
     required this.summary,
     required this.topExpenseCategories,
+    required this.dailyIncomeExpense,
   });
 
   final DateTime start;
   final DateTime end;
   final DashboardSummary summary;
   final List<CategoryBreakdownItem> topExpenseCategories;
+  final List<({int income, int expense})> dailyIncomeExpense;
 }
 
 final weeklyDashboardProvider =
@@ -49,12 +51,18 @@ class WeeklyDashboardNotifier
               transactions,
               topN: 5,
             );
+            final daily = _calculator.dailyIncomeExpense(
+              start: start,
+              days: 7,
+              transactions: transactions,
+            );
             state = AsyncData(
               WeeklyDashboardState(
                 start: start,
                 end: end,
                 summary: summary,
                 topExpenseCategories: breakdown,
+                dailyIncomeExpense: daily,
               ),
             );
           },

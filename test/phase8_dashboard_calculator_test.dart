@@ -56,4 +56,62 @@ void main() {
     expect(items.first.percentage, closeTo(0.75, 0.0001));
     expect(items.last.percentage, closeTo(0.25, 0.0001));
   });
+
+  test('dailyIncomeExpense buckets by day', () {
+    final start = DateTime(2025, 1, 1);
+    final series = calculator.dailyIncomeExpense(
+      start: start,
+      days: 3,
+      transactions: [
+        Transaction(
+          id: 1,
+          amount: 10,
+          type: TransactionType.income,
+          accountId: 1,
+          categoryId: null,
+          note: null,
+          date: DateTime(2025, 1, 1, 10),
+          isPending: false,
+        ),
+        Transaction(
+          id: 2,
+          amount: 5,
+          type: TransactionType.expense,
+          accountId: 1,
+          categoryId: null,
+          note: null,
+          date: DateTime(2025, 1, 2, 10),
+          isPending: false,
+        ),
+        Transaction(
+          id: 3,
+          amount: 999,
+          type: TransactionType.transfer,
+          accountId: 1,
+          categoryId: null,
+          note: null,
+          date: DateTime(2025, 1, 3, 10),
+          isPending: false,
+        ),
+        Transaction(
+          id: 4,
+          amount: 100,
+          type: TransactionType.expense,
+          accountId: 1,
+          categoryId: null,
+          note: null,
+          date: DateTime(2025, 1, 2, 10),
+          isPending: true,
+        ),
+      ],
+    );
+
+    expect(series.length, 3);
+    expect(series[0].income, 10);
+    expect(series[0].expense, 0);
+    expect(series[1].income, 0);
+    expect(series[1].expense, 5);
+    expect(series[2].income, 0);
+    expect(series[2].expense, 0);
+  });
 }

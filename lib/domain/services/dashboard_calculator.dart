@@ -74,4 +74,37 @@ class DashboardCalculator {
         )
         .toList();
   }
+
+  List<({int income, int expense})> dailyIncomeExpense({
+    required DateTime start,
+    required int days,
+    required Iterable<Transaction> transactions,
+  }) {
+    final buckets = List.generate(days, (_) => (income: 0, expense: 0));
+
+    for (final tx in transactions) {
+      if (tx.isPending) continue;
+      if (tx.type == TransactionType.transfer) continue;
+      final day = DateTime(tx.date.year, tx.date.month, tx.date.day);
+      final index = day
+          .difference(DateTime(start.year, start.month, start.day))
+          .inDays;
+      if (index < 0 || index >= days) continue;
+
+      final current = buckets[index];
+      if (tx.type == TransactionType.income) {
+        buckets[index] = (
+          income: current.income + tx.amount,
+          expense: current.expense,
+        );
+      } else if (tx.type == TransactionType.expense) {
+        buckets[index] = (
+          income: current.income,
+          expense: current.expense + tx.amount,
+        );
+      }
+    }
+
+    return buckets;
+  }
 }
