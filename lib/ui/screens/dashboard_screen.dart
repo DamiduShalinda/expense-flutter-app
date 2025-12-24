@@ -7,14 +7,26 @@ import 'package:expense_manage/providers/categories_provider.dart';
 import 'package:expense_manage/providers/dashboard_provider.dart';
 import 'package:expense_manage/providers/preferences_provider.dart';
 import 'package:expense_manage/ui/widgets/amount_text.dart';
-import 'package:expense_manage/ui/widgets/simple_bar_chart.dart';
+import 'package:expense_manage/ui/widgets/analytics_bar_chart.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardAsync = ref.watch(weeklyDashboardProvider);
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  _DashboardPeriod _period = _DashboardPeriod.week;
+  DateTimeRange? _customRange;
+
+  @override
+  Widget build(BuildContext context) {
+    final weekday = ref.watch(firstDayOfWeekProvider).value ?? DateTime.monday;
+    final range = _resolveRange(weekday);
+    final dashboardAsync = ref.watch(
+      dashboardProvider(DashboardQuery(start: range.start, end: range.end)),
+    );
     final accountsAsync = ref.watch(activeAccountsProvider);
     final categoriesAsync = ref.watch(categoriesByParentProvider);
     final currencyCode = ref.watch(currencyCodeProvider).value;
@@ -35,8 +47,11 @@ class DashboardScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _buildPeriodSelector(context),
+        const SizedBox(height: 12),
         dashboardAsync.when(
-          data: (state) => _WeeklySummaryCard(
+          data: (state) => _PeriodSummaryCard(
+            title: _periodLabel(),
             start: state.start,
             end: state.end,
             income: state.summary.incomeTotal,
@@ -70,11 +85,14 @@ class DashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Last 7 days',
+                      'Net per day',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
-                    SimpleBarChart(values: values),
+                    AnalyticsBarChart(
+                      values: values,
+                      labels: _dayLabels(state.start, values.length),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Net per day (income - expense)',
@@ -96,15 +114,31 @@ class DashboardScreen extends ConsumerWidget {
               data: (state) {
                 final items = state.topExpenseCategories;
                 if (items.isEmpty) {
-                  return const Text('No expenses this week');
+                  return const Text('No expenses this period');
                 }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Top categories',
+                      'Expenses by category',
                       style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    AnalyticsBarChart(
+                      values:
+                          items.map((e) => e.totalExpense.toDouble()).toList(),
+                      labels:
+                          items
+                              .map(
+                                (e) => _shortLabel(
+                                  _categoryName(e.categoryId, categoriesById),
+                                ),
+                              )
+                              .toList(),
+                      positiveColor: Theme.of(context).colorScheme.primary,
+                      negativeColor: Theme.of(context).colorScheme.primary,
+                      zeroColor: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 12),
                     for (final item in items)
@@ -122,6 +156,44 @@ class DashboardScreen extends ConsumerWidget {
               loading: () => const LinearProgressIndicator(),
             ),
           ),
+        ),
+        const SizedBox(height: 12),
+        dashboardAsync.when(
+          data: (state) {
+            if (state.topExpenseNotes.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Top notes',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    for (final note in state.topExpenseNotes)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(note.note)),
+                            AmountText(
+                              -note.totalExpense,
+                              currencyCode: currencyCode,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+          error: (_, __) => const SizedBox.shrink(),
+          loading: () => const SizedBox.shrink(),
         ),
         const SizedBox(height: 12),
         Card(
@@ -159,8 +231,9 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _WeeklySummaryCard extends StatelessWidget {
-  const _WeeklySummaryCard({
+class _PeriodSummaryCard extends StatelessWidget {
+  const _PeriodSummaryCard({
+    required this.title,
     required this.start,
     required this.end,
     required this.income,
@@ -169,6 +242,7 @@ class _WeeklySummaryCard extends StatelessWidget {
     required this.currencyCode,
   });
 
+  final String title;
   final DateTime start;
   final DateTime end;
   final int income;
@@ -184,7 +258,7 @@ class _WeeklySummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('This week', style: Theme.of(context).textTheme.titleMedium),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
               '${_fmtDate(start)} – ${_fmtDate(end.subtract(const Duration(days: 1)))}',
@@ -353,4 +427,112 @@ String _fmtDate(DateTime date) {
     'Dec',
   ];
   return '${months[date.month - 1]} ${date.day}';
+}
+
+String _shortLabel(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return 'N/A';
+  if (trimmed.length <= 6) return trimmed;
+  return trimmed.substring(0, 6);
+}
+
+List<String> _dayLabels(DateTime start, int days) {
+  const labels = <String>['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final startDay = DateTime(start.year, start.month, start.day);
+  return List<String>.generate(days, (index) {
+    final day = startDay.add(Duration(days: index));
+    return labels[day.weekday - 1];
+  });
+}
+
+enum _DashboardPeriod { week, month, custom }
+
+extension on _DashboardScreenState {
+  Widget _buildPeriodSelector(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        ChoiceChip(
+          label: const Text('Week'),
+          selected: _period == _DashboardPeriod.week,
+          onSelected: (_) => setState(() => _period = _DashboardPeriod.week),
+        ),
+        ChoiceChip(
+          label: const Text('Month'),
+          selected: _period == _DashboardPeriod.month,
+          onSelected: (_) => setState(() => _period = _DashboardPeriod.month),
+        ),
+        ChoiceChip(
+          label: const Text('Custom'),
+          selected: _period == _DashboardPeriod.custom,
+          onSelected: (_) => _pickCustomRange(context),
+        ),
+      ],
+    );
+  }
+
+  DateTimeRange _resolveRange(int firstDayOfWeek) {
+    final now = DateTime.now();
+    return switch (_period) {
+      _DashboardPeriod.week => DateTimeRange(
+        start: startOfWeek(now, firstDayOfWeek: firstDayOfWeek),
+        end: startOfWeek(now, firstDayOfWeek: firstDayOfWeek).add(
+          const Duration(days: 7),
+        ),
+      ),
+      _DashboardPeriod.month => DateTimeRange(
+        start: DateTime(now.year, now.month, 1),
+        end: DateTime(now.year, now.month + 1, 1),
+      ),
+      _DashboardPeriod.custom =>
+        _customRange ??
+            DateTimeRange(
+              start: startOfWeek(now, firstDayOfWeek: firstDayOfWeek),
+              end: startOfWeek(now, firstDayOfWeek: firstDayOfWeek).add(
+                const Duration(days: 7),
+              ),
+            ),
+    };
+  }
+
+  Future<void> _pickCustomRange(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = _customRange ??
+        DateTimeRange(
+          start: now.subtract(const Duration(days: 6)),
+          end: now,
+        );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000, 1, 1),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDateRange: initial,
+    );
+    if (!mounted) return;
+    if (picked == null) return;
+    setState(() {
+      _period = _DashboardPeriod.custom;
+      _customRange = DateTimeRange(
+        start: DateTime(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+        ),
+        end: DateTime(
+          picked.end.year,
+          picked.end.month,
+          picked.end.day,
+        ).add(const Duration(days: 1)),
+      );
+    });
+  }
+
+  String _periodLabel() {
+    return switch (_period) {
+      _DashboardPeriod.week => 'This week',
+      _DashboardPeriod.month => 'This month',
+      _DashboardPeriod.custom => 'Custom range',
+    };
+  }
 }

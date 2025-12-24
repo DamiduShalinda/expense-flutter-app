@@ -61,6 +61,35 @@ class TransactionsRepository {
     });
   }
 
+  Future<void> importTransaction({
+    required int id,
+    required int amount,
+    required TransactionType type,
+    required int accountId,
+    int? categoryId,
+    String? note,
+    required DateTime date,
+    required bool isPending,
+  }) async {
+    if (amount < 0) {
+      throw ArgumentError.value(amount, 'amount', 'Must be >= 0');
+    }
+
+    await _db.into(_db.transactions).insert(
+      TransactionsCompanion(
+        id: Value(id),
+        amount: Value(amount),
+        type: Value(type),
+        accountId: Value(accountId),
+        categoryId: Value(categoryId),
+        note: Value(note),
+        date: Value(date),
+        isPending: Value(isPending),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
   Stream<List<Transaction>> watchTransactions({
     required DateTime start,
     required DateTime end,

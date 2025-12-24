@@ -88,7 +88,9 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
     final bottomPadding = MediaQuery.viewInsetsOf(context).bottom;
 
     return SafeArea(
-      child: Padding(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
@@ -103,6 +105,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                 key: _formKey,
                 child: ListView(
                   shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
                   children: [
                     Row(
                       children: [

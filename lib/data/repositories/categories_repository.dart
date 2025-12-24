@@ -70,6 +70,32 @@ class CategoriesRepository {
         );
   }
 
+  Future<void> importCategory({
+    required int id,
+    required String name,
+    int? parentId,
+    required int color,
+    required int icon,
+    required bool isIncome,
+  }) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(name, 'name', 'Must not be empty');
+    }
+
+    await _db.into(_db.categories).insert(
+      CategoriesCompanion(
+        id: Value(id),
+        name: Value(trimmed),
+        parentId: Value(parentId),
+        color: Value(color),
+        icon: Value(icon),
+        isIncome: Value(isIncome),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
   Future<Category> requireCategory(int categoryId) async {
     final category =
         await (_db.select(_db.categories)

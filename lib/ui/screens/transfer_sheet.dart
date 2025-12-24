@@ -42,104 +42,111 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
     final accountsAsync = ref.watch(activeAccountsProvider);
 
     return SafeArea(
-      child: Padding(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
           bottom: bottomPadding + 16,
         ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              accountsAsync.when(
-                data: (accounts) {
-                  return Column(
-                    children: [
-                      DropdownButtonFormField<int>(
-                        value: _validAccount(_fromAccountId, accounts),
-                        decoration: const InputDecoration(labelText: 'From'),
-                        items: accounts
-                            .map(
-                              (a) => DropdownMenuItem(
-                                value: a.id,
-                                child: Text(a.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _saving
-                            ? null
-                            : (value) => setState(() => _fromAccountId = value),
-                        validator: (value) =>
-                            value == null ? 'Select an account' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<int>(
-                        value: _validAccount(_toAccountId, accounts),
-                        decoration: const InputDecoration(labelText: 'To'),
-                        items: accounts
-                            .map(
-                              (a) => DropdownMenuItem(
-                                value: a.id,
-                                child: Text(a.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _saving
-                            ? null
-                            : (value) => setState(() => _toAccountId = value),
-                        validator: (value) =>
-                            value == null ? 'Select an account' : null,
-                      ),
-                    ],
-                  );
-                },
-                error: (error, _) => Text('Failed to load accounts: $error'),
-                loading: () => const LinearProgressIndicator(),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _amountController,
-                enabled: !_saving,
-                decoration: const InputDecoration(labelText: 'Amount'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  final parsed = int.tryParse((value ?? '').trim());
-                  if (parsed == null) return 'Enter a valid number';
-                  if (parsed <= 0) return 'Amount must be greater than 0';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Date'),
-                subtitle: Text(_formatDate(_date)),
-                trailing: const Icon(Icons.calendar_today_outlined),
-                onTap: _saving
-                    ? null
-                    : () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          firstDate: DateTime(2000, 1, 1),
-                          lastDate: DateTime(2100, 12, 31),
-                          initialDate: _date,
-                        );
-                        if (picked == null) return;
-                        setState(() => _date = picked);
-                      },
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saving ? null : () => _save(context),
-                  child: Text(_saving ? 'Saving…' : 'Save'),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                accountsAsync.when(
+                  data: (accounts) {
+                    return Column(
+                      children: [
+                        DropdownButtonFormField<int>(
+                          value: _validAccount(_fromAccountId, accounts),
+                          decoration: const InputDecoration(labelText: 'From'),
+                          items: accounts
+                              .map(
+                                (a) => DropdownMenuItem(
+                                  value: a.id,
+                                  child: Text(a.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) =>
+                                  setState(() => _fromAccountId = value),
+                          validator: (value) =>
+                              value == null ? 'Select an account' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: _validAccount(_toAccountId, accounts),
+                          decoration: const InputDecoration(labelText: 'To'),
+                          items: accounts
+                              .map(
+                                (a) => DropdownMenuItem(
+                                  value: a.id,
+                                  child: Text(a.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) =>
+                                  setState(() => _toAccountId = value),
+                          validator: (value) =>
+                              value == null ? 'Select an account' : null,
+                        ),
+                      ],
+                    );
+                  },
+                  error: (error, _) => Text('Failed to load accounts: $error'),
+                  loading: () => const LinearProgressIndicator(),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _amountController,
+                  enabled: !_saving,
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    final parsed = int.tryParse((value ?? '').trim());
+                    if (parsed == null) return 'Enter a valid number';
+                    if (parsed <= 0) return 'Amount must be greater than 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Date'),
+                  subtitle: Text(_formatDate(_date)),
+                  trailing: const Icon(Icons.calendar_today_outlined),
+                  onTap: _saving
+                      ? null
+                      : () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(2000, 1, 1),
+                            lastDate: DateTime(2100, 12, 31),
+                            initialDate: _date,
+                          );
+                          if (picked == null) return;
+                          setState(() => _date = picked);
+                        },
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _saving ? null : () => _save(context),
+                    child: Text(_saving ? 'Saving…' : 'Save'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

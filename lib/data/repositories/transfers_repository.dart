@@ -95,6 +95,47 @@ class TransfersRepository {
     });
   }
 
+  Future<void> importTransfer({
+    required int id,
+    required int fromAccountId,
+    required int toAccountId,
+    required int amount,
+    required DateTime date,
+    required String linkedTransactionIds,
+  }) async {
+    if (fromAccountId == toAccountId) {
+      throw ArgumentError.value(toAccountId, 'toAccountId', 'Must differ');
+    }
+    if (amount < 0) {
+      throw ArgumentError.value(amount, 'amount', 'Must be >= 0');
+    }
+
+    await _db.into(_db.transfers).insert(
+      TransfersCompanion(
+        id: Value(id),
+        fromAccountId: Value(fromAccountId),
+        toAccountId: Value(toAccountId),
+        amount: Value(amount),
+        date: Value(date),
+        linkedTransactionIds: Value(linkedTransactionIds),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  Stream<List<Transfer>> watchTransfers({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final query = _db.select(_db.transfers)
+      ..where((t) => t.date.isBetweenValues(start, end))
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc),
+        (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
   Future<void> deleteTransfer(int transferId) async {
     await _db.transaction(() async {
       final transfer =

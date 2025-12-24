@@ -41,6 +41,41 @@ class AccountsRepository {
         );
   }
 
+  Future<void> importAccount({
+    required int id,
+    required String name,
+    required AccountType type,
+    required int openingBalance,
+    required int currentBalance,
+    int? creditLimit,
+    int? billingStartDay,
+    int? dueDay,
+    required bool isArchived,
+  }) async {
+    if (openingBalance < 0) {
+      throw ArgumentError.value(
+        openingBalance,
+        'openingBalance',
+        'Must be >= 0',
+      );
+    }
+
+    await _db.into(_db.accounts).insert(
+      AccountsCompanion(
+        id: Value(id),
+        name: Value(name),
+        type: Value(type),
+        openingBalance: Value(openingBalance),
+        currentBalance: Value(currentBalance),
+        creditLimit: Value(creditLimit),
+        billingStartDay: Value(billingStartDay),
+        dueDay: Value(dueDay),
+        isArchived: Value(isArchived),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
   Stream<List<Account>> watchActiveAccounts() {
     return (_db.select(_db.accounts)
           ..where((a) => a.isArchived.equals(false))

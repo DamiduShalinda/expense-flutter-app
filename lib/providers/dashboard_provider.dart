@@ -4,16 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:expense_manage/data/database/app_database.dart';
 import 'package:expense_manage/domain/services/dashboard_calculator.dart';
-import 'package:expense_manage/providers/preferences_provider.dart';
 import 'package:expense_manage/providers/repositories_provider.dart';
 
-class WeeklyDashboardState {
-  const WeeklyDashboardState({
+class DashboardState {
+  const DashboardState({
     required this.start,
     required this.end,
     required this.summary,
     required this.topExpenseCategories,
     required this.dailyIncomeExpense,
+    required this.topExpenseNotes,
   });
 
   final DateTime start;
@@ -21,48 +21,66 @@ class WeeklyDashboardState {
   final DashboardSummary summary;
   final List<CategoryBreakdownItem> topExpenseCategories;
   final List<({int income, int expense})> dailyIncomeExpense;
+  final List<NoteBreakdownItem> topExpenseNotes;
 }
 
-final weeklyDashboardProvider =
-    NotifierProvider.autoDispose<
-      WeeklyDashboardNotifier,
-      AsyncValue<WeeklyDashboardState>
-    >(WeeklyDashboardNotifier.new);
+class DashboardQuery {
+  const DashboardQuery({required this.start, required this.end});
 
-class WeeklyDashboardNotifier
-    extends AutoDisposeNotifier<AsyncValue<WeeklyDashboardState>> {
+  final DateTime start;
+  final DateTime end;
+
+  @override
+  bool operator ==(Object other) {
+    return other is DashboardQuery && other.start == start && other.end == end;
+  }
+
+  @override
+  int get hashCode => Object.hash(start, end);
+}
+
+final dashboardProvider = NotifierProvider.autoDispose.family<
+  DashboardNotifier,
+  AsyncValue<DashboardState>,
+  DashboardQuery
+>(DashboardNotifier.new);
+
+class DashboardNotifier
+    extends AutoDisposeFamilyNotifier<AsyncValue<DashboardState>, DashboardQuery> {
   StreamSubscription<List<Transaction>>? _subscription;
   final _calculator = const DashboardCalculator();
 
   @override
-  AsyncValue<WeeklyDashboardState> build() {
-    final now = DateTime.now();
-    final weekday = ref.watch(firstDayOfWeekProvider).value ?? DateTime.monday;
-    final start = startOfWeek(now, firstDayOfWeek: weekday);
-    final end = start.add(const Duration(days: 7));
-
+  AsyncValue<DashboardState> build(DashboardQuery arg) {
     final repo = ref.watch(transactionsRepositoryProvider);
     _subscription = repo
-        .watchTransactions(start: start, end: end)
+        .watchTransactions(start: arg.start, end: arg.end)
         .listen(
           (transactions) {
-            final summary = _calculator.weeklySummary(transactions);
+            final summary = _calculator.summary(transactions);
             final breakdown = _calculator.topExpenseCategories(
               transactions,
               topN: 5,
             );
+            final notes = _calculator.topExpenseNotes(transactions, topN: 5);
+            final days = arg.end
+                .difference(
+                  DateTime(arg.start.year, arg.start.month, arg.start.day),
+                )
+                .inDays;
             final daily = _calculator.dailyIncomeExpense(
-              start: start,
-              days: 7,
+              start: arg.start,
+              days: days,
               transactions: transactions,
             );
             state = AsyncData(
-              WeeklyDashboardState(
-                start: start,
-                end: end,
+              DashboardState(
+                start: arg.start,
+                end: arg.end,
                 summary: summary,
                 topExpenseCategories: breakdown,
                 dailyIncomeExpense: daily,
+                topExpenseNotes: notes,
               ),
             );
           },

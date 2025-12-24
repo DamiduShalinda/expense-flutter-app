@@ -24,6 +24,13 @@ class CategoryBreakdownItem {
   final double percentage;
 }
 
+class NoteBreakdownItem {
+  const NoteBreakdownItem({required this.note, required this.totalExpense});
+
+  final String note;
+  final int totalExpense;
+}
+
 class DashboardCalculator {
   const DashboardCalculator();
 
@@ -42,6 +49,10 @@ class DashboardCalculator {
     }
 
     return DashboardSummary(incomeTotal: income, expenseTotal: expense);
+  }
+
+  DashboardSummary summary(Iterable<Transaction> transactions) {
+    return weeklySummary(transactions);
   }
 
   List<CategoryBreakdownItem> topExpenseCategories(
@@ -72,6 +83,29 @@ class DashboardCalculator {
             percentage: e.value / totalExpense,
           ),
         )
+        .toList();
+  }
+
+  List<NoteBreakdownItem> topExpenseNotes(
+    Iterable<Transaction> transactions, {
+    int topN = 5,
+  }) {
+    final totals = <String, int>{};
+
+    for (final tx in transactions) {
+      if (tx.isPending) continue;
+      if (tx.type != TransactionType.expense) continue;
+      final note = tx.note?.trim() ?? '';
+      if (note.isEmpty) continue;
+      totals[note] = (totals[note] ?? 0) + tx.amount;
+    }
+
+    final sorted = totals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sorted
+        .take(topN)
+        .map((e) => NoteBreakdownItem(note: e.key, totalExpense: e.value))
         .toList();
   }
 

@@ -8,6 +8,7 @@ import 'package:expense_manage/providers/repositories_provider.dart';
 import 'package:expense_manage/ui/screens/account_form_screen.dart';
 import 'package:expense_manage/ui/screens/account_transactions_screen.dart';
 import 'package:expense_manage/ui/widgets/amount_text.dart';
+import 'package:expense_manage/ui/widgets/analytics_bar_chart.dart';
 
 class AccountsScreen extends ConsumerWidget {
   const AccountsScreen({super.key});
@@ -48,6 +49,42 @@ class AccountsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  if (accounts.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Account balances',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 12),
+                            AnalyticsBarChart(
+                              values:
+                                  accounts
+                                      .map(
+                                        (a) =>
+                                            _displayBalance(a).toDouble(),
+                                      )
+                                      .toList(),
+                              labels:
+                                  accounts
+                                      .map((a) => _shortLabel(a.name))
+                                      .toList(),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Current balance by account',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   if (accounts.isEmpty)
                     const Padding(
@@ -174,4 +211,11 @@ IconData _iconForType(AccountType type) {
     AccountType.bank => Icons.account_balance_outlined,
     AccountType.creditCard => Icons.credit_card_outlined,
   };
+}
+
+String _shortLabel(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) return 'N/A';
+  if (trimmed.length <= 6) return trimmed;
+  return trimmed.substring(0, 6);
 }

@@ -4,6 +4,7 @@ import 'accounts_screen.dart';
 import 'dashboard_screen.dart';
 import 'settings_screen.dart';
 import 'transactions_screen.dart';
+import 'transaction_sheet.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -50,6 +51,13 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       appBar: AppBar(title: Text(destinations[_index].label)),
       body: IndexedStack(index: _index, children: screens),
+      floatingActionButton:
+          _index == 0
+              ? FloatingActionButton(
+                onPressed: () => showAddTransactionSheet(context),
+                child: const Icon(Icons.add),
+              )
+              : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         destinations: destinations,
