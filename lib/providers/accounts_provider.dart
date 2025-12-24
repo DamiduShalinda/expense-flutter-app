@@ -32,6 +32,11 @@ class ActiveAccountsNotifier
 final totalBalanceProvider = Provider.autoDispose<AsyncValue<int>>((ref) {
   final accountsAsync = ref.watch(activeAccountsProvider);
   return accountsAsync.whenData(
-    (accounts) => accounts.fold<int>(0, (sum, a) => sum + a.currentBalance),
+    (accounts) => accounts.fold<int>(
+      0,
+      (sum, a) => sum + (a.type == AccountType.creditCard
+          ? -a.currentBalance
+          : a.currentBalance),
+    ),
   );
 });

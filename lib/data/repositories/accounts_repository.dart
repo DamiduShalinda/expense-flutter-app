@@ -10,6 +10,29 @@ class AccountsRepository {
   final AppDatabase _db;
   final BalanceCalculator _calculator;
 
+  Future<void> ensureDefaultAccounts() async {
+    final existing =
+        await (_db.select(_db.accounts)..limit(1)).getSingleOrNull();
+    if (existing != null) return;
+
+    await _db.transaction(() async {
+      final stillEmpty =
+          await (_db.select(_db.accounts)..limit(1)).getSingleOrNull() == null;
+      if (!stillEmpty) return;
+
+      await createAccount(
+        name: 'Savings',
+        type: AccountType.bank,
+        openingBalance: 0,
+      );
+      await createAccount(
+        name: 'Credit Card',
+        type: AccountType.creditCard,
+        openingBalance: 0,
+      );
+    });
+  }
+
   Future<int> createAccount({
     required String name,
     required AccountType type,

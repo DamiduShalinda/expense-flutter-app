@@ -10,11 +10,28 @@ import 'package:expense_manage/ui/screens/account_transactions_screen.dart';
 import 'package:expense_manage/ui/widgets/amount_text.dart';
 import 'package:expense_manage/ui/widgets/analytics_bar_chart.dart';
 
-class AccountsScreen extends ConsumerWidget {
+class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountsScreen> createState() => _AccountsScreenState();
+}
+
+class _AccountsScreenState extends ConsumerState<AccountsScreen> {
+  _AccountsFilterType? _activeFilter;
+  int? _selectedAccountId;
+  AccountType? _selectedAccountType;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(() async {
+      await ref.read(accountsRepositoryProvider).ensureDefaultAccounts();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final accountsAsync = ref.watch(activeAccountsProvider);
     final totalAsync = ref.watch(totalBalanceProvider);
     final currencyCode = ref.watch(currencyCodeProvider).value;
@@ -24,6 +41,17 @@ class AccountsScreen extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         child: accountsAsync.when(
           data: (accounts) {
+            final filtered = accounts.where((a) {
+              if (_selectedAccountId != null && a.id != _selectedAccountId) {
+                return false;
+              }
+              if (_selectedAccountType != null &&
+                  a.type != _selectedAccountType) {
+                return false;
+              }
+              return true;
+            }).toList();
+
             return KeyedSubtree(
               key: const ValueKey('accounts-data'),
               child: ListView(
@@ -49,7 +77,9 @@ class AccountsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  if (accounts.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildFilterSection(context, accounts),
+                  if (filtered.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Card(
                       child: Padding(
@@ -64,14 +94,14 @@ class AccountsScreen extends ConsumerWidget {
                             const SizedBox(height: 12),
                             AnalyticsBarChart(
                               values:
-                                  accounts
+                                  filtered
                                       .map(
                                         (a) =>
                                             _displayBalance(a).toDouble(),
                                       )
                                       .toList(),
                               labels:
-                                  accounts
+                                  filtered
                                       .map((a) => _shortLabel(a.name))
                                       .toList(),
                             ),
@@ -86,13 +116,13 @@ class AccountsScreen extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  if (accounts.isEmpty)
+                  if (filtered.isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(top: 24),
-                      child: Center(child: Text('No accounts yet')),
+                      child: Center(child: Text('No accounts to show')),
                     )
                   else
-                    ...accounts.map(
+                    ...filtered.map(
                       (a) => Card(
                         child: ListTile(
                           leading: Icon(_iconForType(a.type)),
@@ -156,6 +186,134 @@ class AccountsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildFilterSection(BuildContext context, List<Account> accounts) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Account'),
+              labelPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              selected: _activeFilter == _AccountsFilterType.account,
+              onSelected: (_) => _toggleFilter(_AccountsFilterType.account),
+            ),
+            ChoiceChip(
+              label: const Text('Type'),
+              labelPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              selected: _activeFilter == _AccountsFilterType.type,
+              onSelected: (_) => _toggleFilter(_AccountsFilterType.type),
+            ),
+          ],
+        ),
+        if (_activeFilter != null) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _buildFilterOptions(accounts),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildFilterOptions(List<Account> accounts) {
+    switch (_activeFilter) {
+      case _AccountsFilterType.account:
+        return [
+          ChoiceChip(
+            label: const Text('All'),
+            labelPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            selected: _selectedAccountId == null,
+            onSelected: (_) => setState(() => _selectedAccountId = null),
+          ),
+          for (final account in accounts)
+            ChoiceChip(
+              label: Text(account.name),
+              labelPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              selected: _selectedAccountId == account.id,
+              onSelected: (_) => setState(() {
+                _selectedAccountId = account.id;
+              }),
+            ),
+        ];
+      case _AccountsFilterType.type:
+        return [
+          ChoiceChip(
+            label: const Text('All'),
+            labelPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            selected: _selectedAccountType == null,
+            onSelected: (_) => setState(() => _selectedAccountType = null),
+          ),
+          ChoiceChip(
+            label: const Text('Cash'),
+            labelPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            selected: _selectedAccountType == AccountType.cash,
+            onSelected: (_) =>
+                setState(() => _selectedAccountType = AccountType.cash),
+          ),
+          ChoiceChip(
+            label: const Text('Savings'),
+            labelPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            selected: _selectedAccountType == AccountType.bank,
+            onSelected: (_) =>
+                setState(() => _selectedAccountType = AccountType.bank),
+          ),
+          ChoiceChip(
+            label: const Text('Credit Card'),
+            labelPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            selected: _selectedAccountType == AccountType.creditCard,
+            onSelected: (_) => setState(
+              () => _selectedAccountType = AccountType.creditCard,
+            ),
+          ),
+        ];
+      case null:
+        return const [];
+    }
+  }
+
+  void _toggleFilter(_AccountsFilterType type) {
+    setState(() {
+      _activeFilter = _activeFilter == type ? null : type;
+    });
+  }
 }
 
 Future<void> _confirmDelete(
@@ -200,7 +358,7 @@ int _displayBalance(Account a) {
 String _labelForType(AccountType type) {
   return switch (type) {
     AccountType.cash => 'Cash',
-    AccountType.bank => 'Bank',
+    AccountType.bank => 'Savings',
     AccountType.creditCard => 'Credit Card',
   };
 }
@@ -219,3 +377,5 @@ String _shortLabel(String name) {
   if (trimmed.length <= 6) return trimmed;
   return trimmed.substring(0, 6);
 }
+
+enum _AccountsFilterType { account, type }

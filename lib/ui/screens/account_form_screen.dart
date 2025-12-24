@@ -34,7 +34,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
   final _billingStartDayController = TextEditingController();
   final _dueDayController = TextEditingController();
 
-  AccountType _type = AccountType.cash;
+  AccountType _type = AccountType.bank;
   bool _isArchived = false;
   bool _loading = false;
 
@@ -158,7 +158,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                         ),
                         DropdownMenuItem(
                           value: AccountType.bank,
-                          child: Text('Bank'),
+                          child: Text('Savings'),
                         ),
                         DropdownMenuItem(
                           value: AccountType.creditCard,

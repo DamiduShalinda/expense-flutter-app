@@ -38,6 +38,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   void initState() {
     super.initState();
     Future<void>.microtask(() async {
+      await ref.read(accountsRepositoryProvider).ensureDefaultAccounts();
       await ref.read(categoriesRepositoryProvider).ensureDefaultCategories();
     });
   }
