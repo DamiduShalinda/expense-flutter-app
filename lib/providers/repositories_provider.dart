@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:expense_manage/data/repositories/accounts_repository.dart';
 import 'package:expense_manage/data/repositories/categories_repository.dart';
+import 'package:expense_manage/data/repositories/loan_payment_repository.dart';
+import 'package:expense_manage/data/repositories/loan_repository.dart';
 import 'package:expense_manage/data/repositories/preferences_repository.dart';
 import 'package:expense_manage/data/repositories/transactions_repository.dart';
 import 'package:expense_manage/data/repositories/transfers_repository.dart';
@@ -30,5 +32,17 @@ final transfersRepositoryProvider = Provider<TransfersRepository>((ref) {
   return TransfersRepository(
     ref.watch(appDatabaseProvider),
     accountsRepository: ref.watch(accountsRepositoryProvider),
+  );
+});
+
+final loanRepositoryProvider = Provider<LoanRepository>((ref) {
+  return LoanRepository(ref.watch(appDatabaseProvider));
+});
+
+final loanPaymentRepositoryProvider = Provider<LoanPaymentRepository>((ref) {
+  return LoanPaymentRepository(
+    ref.watch(appDatabaseProvider),
+    transactionsRepository: ref.watch(transactionsRepositoryProvider),
+    categoriesRepository: ref.watch(categoriesRepositoryProvider),
   );
 });

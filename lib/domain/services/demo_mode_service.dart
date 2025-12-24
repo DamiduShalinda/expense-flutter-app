@@ -143,6 +143,9 @@ class DemoModeService {
 
   Future<void> _wipeAllTables() async {
     await (_db.delete(_db.transfers)).go();
+    await (_db.delete(_db.loanPayments)).go();
+    await (_db.delete(_db.loanInstallments)).go();
+    await (_db.delete(_db.loans)).go();
     await (_db.delete(_db.transactions)).go();
 
     await (_db.update(_db.categories)).write(
@@ -152,4 +155,3 @@ class DemoModeService {
     await (_db.delete(_db.accounts)).go();
   }
 }
-

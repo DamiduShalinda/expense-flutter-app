@@ -7,6 +7,7 @@ import 'package:expense_manage/providers/preferences_provider.dart';
 import 'package:expense_manage/providers/repositories_provider.dart';
 import 'package:expense_manage/ui/screens/account_form_screen.dart';
 import 'package:expense_manage/ui/screens/account_transactions_screen.dart';
+import 'package:expense_manage/ui/screens/loans_screen.dart';
 import 'package:expense_manage/ui/widgets/amount_text.dart';
 import 'package:expense_manage/ui/widgets/analytics_bar_chart.dart';
 
@@ -79,6 +80,20 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildFilterSection(context, accounts),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.request_quote_outlined),
+                      title: const Text('Loans'),
+                      subtitle: const Text('Manage loans and payments'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const LoansScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (filtered.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Card(

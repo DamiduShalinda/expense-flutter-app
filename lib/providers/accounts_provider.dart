@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:expense_manage/data/database/app_database.dart';
+import 'package:expense_manage/providers/loans_provider.dart';
 import 'package:expense_manage/providers/repositories_provider.dart';
 
 final activeAccountsProvider =
@@ -31,12 +32,22 @@ class ActiveAccountsNotifier
 
 final totalBalanceProvider = Provider.autoDispose<AsyncValue<int>>((ref) {
   final accountsAsync = ref.watch(activeAccountsProvider);
-  return accountsAsync.whenData(
-    (accounts) => accounts.fold<int>(
-      0,
-      (sum, a) => sum + (a.type == AccountType.creditCard
-          ? -a.currentBalance
-          : a.currentBalance),
-    ),
+  final loansAsync = ref.watch(totalOutstandingLoansProvider);
+  return accountsAsync.when(
+    data: (accounts) {
+      final accountsTotal = accounts.fold<int>(
+        0,
+        (sum, a) => sum + (a.type == AccountType.creditCard
+            ? -a.currentBalance
+            : a.currentBalance),
+      );
+      return loansAsync.when(
+        data: (loansTotal) => AsyncData(accountsTotal - loansTotal),
+        error: (error, stackTrace) => AsyncError(error, stackTrace),
+        loading: () => const AsyncLoading(),
+      );
+    },
+    error: (error, stackTrace) => AsyncError(error, stackTrace),
+    loading: () => const AsyncLoading(),
   );
 });
