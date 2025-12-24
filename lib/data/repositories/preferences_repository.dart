@@ -43,6 +43,34 @@ class PreferencesRepository {
         .write(PreferencesCompanion(themeMode: Value(mode)));
   }
 
+  Future<void> setDemoMode(bool isDemoMode) async {
+    final pref = await getPreferences();
+    await (_db.update(_db.preferences)..where((p) => p.id.equals(pref.id)))
+        .write(PreferencesCompanion(isDemoMode: Value(isDemoMode)));
+  }
+
+  Future<void> setHasSeenFirstRunPrompt(bool seen) async {
+    final pref = await getPreferences();
+    await (_db.update(_db.preferences)..where((p) => p.id.equals(pref.id)))
+        .write(PreferencesCompanion(hasSeenFirstRunPrompt: Value(seen)));
+  }
+
+  Future<void> resetToDefaults({
+    required bool isDemoMode,
+    required bool hasSeenFirstRunPrompt,
+  }) async {
+    final prefId = await _ensurePreferencesRow();
+    await (_db.update(_db.preferences)..where((p) => p.id.equals(prefId))).write(
+      PreferencesCompanion(
+        currencyCode: const Value('USD'),
+        firstDayOfWeek: const Value(DateTime.monday),
+        themeMode: const Value(AppThemeMode.system),
+        isDemoMode: Value(isDemoMode),
+        hasSeenFirstRunPrompt: Value(hasSeenFirstRunPrompt),
+      ),
+    );
+  }
+
   Future<int> _ensurePreferencesRow() async {
     final existing = await (_db.select(
       _db.preferences,

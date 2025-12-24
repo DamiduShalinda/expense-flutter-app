@@ -10,4 +10,9 @@ class Preferences extends Table {
 
   TextColumn get themeMode =>
       textEnum<AppThemeMode>().withDefault(const Constant('system'))();
+
+  BoolColumn get isDemoMode => boolean().withDefault(const Constant(false))();
+
+  BoolColumn get hasSeenFirstRunPrompt =>
+      boolean().withDefault(const Constant(false))();
 }

@@ -202,6 +202,12 @@
 - Import CSV
 - Reset database
 
+### T9.3 – Demo mode
+- First-run prompt to enable demo mode
+- Settings toggle to enable/exit
+- Exit wipes DB and restores defaults
+- Seed script in `tool/seed_mock_data.dart`
+
 ## PHASE 10 — Polish & safety
 
 ### T10.1 – Validation & edge cases

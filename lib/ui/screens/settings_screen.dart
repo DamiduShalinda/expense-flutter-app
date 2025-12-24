@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:expense_manage/data/database/app_database.dart';
+import 'package:expense_manage/providers/demo_mode_provider.dart';
 import 'package:expense_manage/providers/preferences_provider.dart';
 import 'package:expense_manage/ui/screens/data_tools_screen.dart';
 import 'categories_screen.dart';
@@ -22,6 +23,13 @@ class SettingsScreen extends ConsumerWidget {
         prefAsync.when(
           data: (pref) => Column(
             children: [
+              SwitchListTile(
+                secondary: const Icon(Icons.science_outlined),
+                title: const Text('Demo mode'),
+                subtitle: const Text('Seeds demo data; exiting wipes everything'),
+                value: pref.isDemoMode,
+                onChanged: (value) => _toggleDemoMode(context, ref, value),
+              ),
               ListTile(
                 leading: const Icon(Icons.payments_outlined),
                 title: const Text('Currency'),
@@ -149,5 +157,52 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _toggleDemoMode(
+    BuildContext context,
+    WidgetRef ref,
+    bool nextValue,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(nextValue ? 'Enable demo mode?' : 'Exit demo mode?'),
+          content: const Text('This will wipe all data on this device.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+
+    final service = ref.read(demoModeServiceProvider);
+    try {
+      if (nextValue) {
+        await service.enterDemoMode();
+      } else {
+        await service.exitDemoMode();
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(nextValue ? 'Demo mode enabled' : 'Demo mode disabled'),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
   }
 }

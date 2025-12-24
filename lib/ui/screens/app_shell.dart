@@ -1,20 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:expense_manage/data/database/app_database.dart';
+import 'package:expense_manage/providers/demo_mode_provider.dart';
+import 'package:expense_manage/providers/preferences_provider.dart';
 import 'accounts_screen.dart';
 import 'dashboard_screen.dart';
 import 'settings_screen.dart';
 import 'transactions_screen.dart';
 import 'transaction_sheet.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   int _index = 0;
+  bool _promptShown = false;
+  ProviderSubscription<AsyncValue<Preference>>? _prefSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefSubscription = ref.listenManual(preferencesProvider, (prev, next) {
+      next.whenData((pref) {
+        if (_promptShown) return;
+        if (pref.hasSeenFirstRunPrompt) return;
+        _promptShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showFirstRunPrompt();
+        });
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _prefSubscription?.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,4 +93,53 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
+
+  Future<void> _showFirstRunPrompt() async {
+    final choice = await showDialog<_FirstRunChoice>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Get started'),
+          content: const Text(
+            'Start with demo data to explore the app faster?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context, _FirstRunChoice.continueEmpty),
+              child: const Text('No thanks'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, _FirstRunChoice.demo),
+              child: const Text('Use demo data'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (choice == null) return;
+
+    final service = ref.read(demoModeServiceProvider);
+    try {
+      if (choice == _FirstRunChoice.demo) {
+        await service.enterDemoMode();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Demo mode enabled')),
+        );
+      } else {
+        await service.initializeStandardDefaults();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Setup failed: $e')),
+      );
+    }
+  }
 }
+
+enum _FirstRunChoice { demo, continueEmpty }

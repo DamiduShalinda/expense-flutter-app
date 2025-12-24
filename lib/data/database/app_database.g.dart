@@ -1030,12 +1030,44 @@ class $PreferencesTable extends Preferences
         requiredDuringInsert: false,
         defaultValue: const Constant('system'),
       ).withConverter<AppThemeMode>($PreferencesTable.$converterthemeMode);
+  static const VerificationMeta _isDemoModeMeta = const VerificationMeta(
+    'isDemoMode',
+  );
+  @override
+  late final GeneratedColumn<bool> isDemoMode = GeneratedColumn<bool>(
+    'is_demo_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_demo_mode" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _hasSeenFirstRunPromptMeta =
+      const VerificationMeta('hasSeenFirstRunPrompt');
+  @override
+  late final GeneratedColumn<bool> hasSeenFirstRunPrompt =
+      GeneratedColumn<bool>(
+        'has_seen_first_run_prompt',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_seen_first_run_prompt" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     currencyCode,
     firstDayOfWeek,
     themeMode,
+    isDemoMode,
+    hasSeenFirstRunPrompt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1070,6 +1102,24 @@ class $PreferencesTable extends Preferences
         ),
       );
     }
+    if (data.containsKey('is_demo_mode')) {
+      context.handle(
+        _isDemoModeMeta,
+        isDemoMode.isAcceptableOrUnknown(
+          data['is_demo_mode']!,
+          _isDemoModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('has_seen_first_run_prompt')) {
+      context.handle(
+        _hasSeenFirstRunPromptMeta,
+        hasSeenFirstRunPrompt.isAcceptableOrUnknown(
+          data['has_seen_first_run_prompt']!,
+          _hasSeenFirstRunPromptMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1097,6 +1147,14 @@ class $PreferencesTable extends Preferences
           data['${effectivePrefix}theme_mode'],
         )!,
       ),
+      isDemoMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_demo_mode'],
+      )!,
+      hasSeenFirstRunPrompt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_seen_first_run_prompt'],
+      )!,
     );
   }
 
@@ -1114,11 +1172,15 @@ class Preference extends DataClass implements Insertable<Preference> {
   final String currencyCode;
   final int firstDayOfWeek;
   final AppThemeMode themeMode;
+  final bool isDemoMode;
+  final bool hasSeenFirstRunPrompt;
   const Preference({
     required this.id,
     required this.currencyCode,
     required this.firstDayOfWeek,
     required this.themeMode,
+    required this.isDemoMode,
+    required this.hasSeenFirstRunPrompt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1131,6 +1193,8 @@ class Preference extends DataClass implements Insertable<Preference> {
         $PreferencesTable.$converterthemeMode.toSql(themeMode),
       );
     }
+    map['is_demo_mode'] = Variable<bool>(isDemoMode);
+    map['has_seen_first_run_prompt'] = Variable<bool>(hasSeenFirstRunPrompt);
     return map;
   }
 
@@ -1140,6 +1204,8 @@ class Preference extends DataClass implements Insertable<Preference> {
       currencyCode: Value(currencyCode),
       firstDayOfWeek: Value(firstDayOfWeek),
       themeMode: Value(themeMode),
+      isDemoMode: Value(isDemoMode),
+      hasSeenFirstRunPrompt: Value(hasSeenFirstRunPrompt),
     );
   }
 
@@ -1155,6 +1221,10 @@ class Preference extends DataClass implements Insertable<Preference> {
       themeMode: $PreferencesTable.$converterthemeMode.fromJson(
         serializer.fromJson<String>(json['themeMode']),
       ),
+      isDemoMode: serializer.fromJson<bool>(json['isDemoMode']),
+      hasSeenFirstRunPrompt: serializer.fromJson<bool>(
+        json['hasSeenFirstRunPrompt'],
+      ),
     );
   }
   @override
@@ -1167,6 +1237,8 @@ class Preference extends DataClass implements Insertable<Preference> {
       'themeMode': serializer.toJson<String>(
         $PreferencesTable.$converterthemeMode.toJson(themeMode),
       ),
+      'isDemoMode': serializer.toJson<bool>(isDemoMode),
+      'hasSeenFirstRunPrompt': serializer.toJson<bool>(hasSeenFirstRunPrompt),
     };
   }
 
@@ -1175,11 +1247,15 @@ class Preference extends DataClass implements Insertable<Preference> {
     String? currencyCode,
     int? firstDayOfWeek,
     AppThemeMode? themeMode,
+    bool? isDemoMode,
+    bool? hasSeenFirstRunPrompt,
   }) => Preference(
     id: id ?? this.id,
     currencyCode: currencyCode ?? this.currencyCode,
     firstDayOfWeek: firstDayOfWeek ?? this.firstDayOfWeek,
     themeMode: themeMode ?? this.themeMode,
+    isDemoMode: isDemoMode ?? this.isDemoMode,
+    hasSeenFirstRunPrompt: hasSeenFirstRunPrompt ?? this.hasSeenFirstRunPrompt,
   );
   Preference copyWithCompanion(PreferencesCompanion data) {
     return Preference(
@@ -1191,6 +1267,12 @@ class Preference extends DataClass implements Insertable<Preference> {
           ? data.firstDayOfWeek.value
           : this.firstDayOfWeek,
       themeMode: data.themeMode.present ? data.themeMode.value : this.themeMode,
+      isDemoMode: data.isDemoMode.present
+          ? data.isDemoMode.value
+          : this.isDemoMode,
+      hasSeenFirstRunPrompt: data.hasSeenFirstRunPrompt.present
+          ? data.hasSeenFirstRunPrompt.value
+          : this.hasSeenFirstRunPrompt,
     );
   }
 
@@ -1200,13 +1282,22 @@ class Preference extends DataClass implements Insertable<Preference> {
           ..write('id: $id, ')
           ..write('currencyCode: $currencyCode, ')
           ..write('firstDayOfWeek: $firstDayOfWeek, ')
-          ..write('themeMode: $themeMode')
+          ..write('themeMode: $themeMode, ')
+          ..write('isDemoMode: $isDemoMode, ')
+          ..write('hasSeenFirstRunPrompt: $hasSeenFirstRunPrompt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, currencyCode, firstDayOfWeek, themeMode);
+  int get hashCode => Object.hash(
+    id,
+    currencyCode,
+    firstDayOfWeek,
+    themeMode,
+    isDemoMode,
+    hasSeenFirstRunPrompt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1214,7 +1305,9 @@ class Preference extends DataClass implements Insertable<Preference> {
           other.id == this.id &&
           other.currencyCode == this.currencyCode &&
           other.firstDayOfWeek == this.firstDayOfWeek &&
-          other.themeMode == this.themeMode);
+          other.themeMode == this.themeMode &&
+          other.isDemoMode == this.isDemoMode &&
+          other.hasSeenFirstRunPrompt == this.hasSeenFirstRunPrompt);
 }
 
 class PreferencesCompanion extends UpdateCompanion<Preference> {
@@ -1222,29 +1315,40 @@ class PreferencesCompanion extends UpdateCompanion<Preference> {
   final Value<String> currencyCode;
   final Value<int> firstDayOfWeek;
   final Value<AppThemeMode> themeMode;
+  final Value<bool> isDemoMode;
+  final Value<bool> hasSeenFirstRunPrompt;
   const PreferencesCompanion({
     this.id = const Value.absent(),
     this.currencyCode = const Value.absent(),
     this.firstDayOfWeek = const Value.absent(),
     this.themeMode = const Value.absent(),
+    this.isDemoMode = const Value.absent(),
+    this.hasSeenFirstRunPrompt = const Value.absent(),
   });
   PreferencesCompanion.insert({
     this.id = const Value.absent(),
     this.currencyCode = const Value.absent(),
     this.firstDayOfWeek = const Value.absent(),
     this.themeMode = const Value.absent(),
+    this.isDemoMode = const Value.absent(),
+    this.hasSeenFirstRunPrompt = const Value.absent(),
   });
   static Insertable<Preference> custom({
     Expression<int>? id,
     Expression<String>? currencyCode,
     Expression<int>? firstDayOfWeek,
     Expression<String>? themeMode,
+    Expression<bool>? isDemoMode,
+    Expression<bool>? hasSeenFirstRunPrompt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (currencyCode != null) 'currency_code': currencyCode,
       if (firstDayOfWeek != null) 'first_day_of_week': firstDayOfWeek,
       if (themeMode != null) 'theme_mode': themeMode,
+      if (isDemoMode != null) 'is_demo_mode': isDemoMode,
+      if (hasSeenFirstRunPrompt != null)
+        'has_seen_first_run_prompt': hasSeenFirstRunPrompt,
     });
   }
 
@@ -1253,12 +1357,17 @@ class PreferencesCompanion extends UpdateCompanion<Preference> {
     Value<String>? currencyCode,
     Value<int>? firstDayOfWeek,
     Value<AppThemeMode>? themeMode,
+    Value<bool>? isDemoMode,
+    Value<bool>? hasSeenFirstRunPrompt,
   }) {
     return PreferencesCompanion(
       id: id ?? this.id,
       currencyCode: currencyCode ?? this.currencyCode,
       firstDayOfWeek: firstDayOfWeek ?? this.firstDayOfWeek,
       themeMode: themeMode ?? this.themeMode,
+      isDemoMode: isDemoMode ?? this.isDemoMode,
+      hasSeenFirstRunPrompt:
+          hasSeenFirstRunPrompt ?? this.hasSeenFirstRunPrompt,
     );
   }
 
@@ -1279,6 +1388,14 @@ class PreferencesCompanion extends UpdateCompanion<Preference> {
         $PreferencesTable.$converterthemeMode.toSql(themeMode.value),
       );
     }
+    if (isDemoMode.present) {
+      map['is_demo_mode'] = Variable<bool>(isDemoMode.value);
+    }
+    if (hasSeenFirstRunPrompt.present) {
+      map['has_seen_first_run_prompt'] = Variable<bool>(
+        hasSeenFirstRunPrompt.value,
+      );
+    }
     return map;
   }
 
@@ -1288,7 +1405,9 @@ class PreferencesCompanion extends UpdateCompanion<Preference> {
           ..write('id: $id, ')
           ..write('currencyCode: $currencyCode, ')
           ..write('firstDayOfWeek: $firstDayOfWeek, ')
-          ..write('themeMode: $themeMode')
+          ..write('themeMode: $themeMode, ')
+          ..write('isDemoMode: $isDemoMode, ')
+          ..write('hasSeenFirstRunPrompt: $hasSeenFirstRunPrompt')
           ..write(')'))
         .toString();
   }
@@ -3265,6 +3384,8 @@ typedef $$PreferencesTableCreateCompanionBuilder =
       Value<String> currencyCode,
       Value<int> firstDayOfWeek,
       Value<AppThemeMode> themeMode,
+      Value<bool> isDemoMode,
+      Value<bool> hasSeenFirstRunPrompt,
     });
 typedef $$PreferencesTableUpdateCompanionBuilder =
     PreferencesCompanion Function({
@@ -3272,6 +3393,8 @@ typedef $$PreferencesTableUpdateCompanionBuilder =
       Value<String> currencyCode,
       Value<int> firstDayOfWeek,
       Value<AppThemeMode> themeMode,
+      Value<bool> isDemoMode,
+      Value<bool> hasSeenFirstRunPrompt,
     });
 
 class $$PreferencesTableFilterComposer
@@ -3303,6 +3426,16 @@ class $$PreferencesTableFilterComposer
     column: $table.themeMode,
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
+
+  ColumnFilters<bool> get isDemoMode => $composableBuilder(
+    column: $table.isDemoMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasSeenFirstRunPrompt => $composableBuilder(
+    column: $table.hasSeenFirstRunPrompt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$PreferencesTableOrderingComposer
@@ -3333,6 +3466,16 @@ class $$PreferencesTableOrderingComposer
     column: $table.themeMode,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isDemoMode => $composableBuilder(
+    column: $table.isDemoMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hasSeenFirstRunPrompt => $composableBuilder(
+    column: $table.hasSeenFirstRunPrompt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PreferencesTableAnnotationComposer
@@ -3359,6 +3502,16 @@ class $$PreferencesTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<AppThemeMode, String> get themeMode =>
       $composableBuilder(column: $table.themeMode, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDemoMode => $composableBuilder(
+    column: $table.isDemoMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get hasSeenFirstRunPrompt => $composableBuilder(
+    column: $table.hasSeenFirstRunPrompt,
+    builder: (column) => column,
+  );
 }
 
 class $$PreferencesTableTableManager
@@ -3396,11 +3549,15 @@ class $$PreferencesTableTableManager
                 Value<String> currencyCode = const Value.absent(),
                 Value<int> firstDayOfWeek = const Value.absent(),
                 Value<AppThemeMode> themeMode = const Value.absent(),
+                Value<bool> isDemoMode = const Value.absent(),
+                Value<bool> hasSeenFirstRunPrompt = const Value.absent(),
               }) => PreferencesCompanion(
                 id: id,
                 currencyCode: currencyCode,
                 firstDayOfWeek: firstDayOfWeek,
                 themeMode: themeMode,
+                isDemoMode: isDemoMode,
+                hasSeenFirstRunPrompt: hasSeenFirstRunPrompt,
               ),
           createCompanionCallback:
               ({
@@ -3408,11 +3565,15 @@ class $$PreferencesTableTableManager
                 Value<String> currencyCode = const Value.absent(),
                 Value<int> firstDayOfWeek = const Value.absent(),
                 Value<AppThemeMode> themeMode = const Value.absent(),
+                Value<bool> isDemoMode = const Value.absent(),
+                Value<bool> hasSeenFirstRunPrompt = const Value.absent(),
               }) => PreferencesCompanion.insert(
                 id: id,
                 currencyCode: currencyCode,
                 firstDayOfWeek: firstDayOfWeek,
                 themeMode: themeMode,
+                isDemoMode: isDemoMode,
+                hasSeenFirstRunPrompt: hasSeenFirstRunPrompt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -1,16 +1,31 @@
-# expense_manage
+# Expense Manage
 
-A new Flutter project.
+Offline-first local expense tracking app built with Flutter + Drift (SQLite) + Riverpod.
 
-## Getting Started
+## Setup
 
-This project is a starting point for a Flutter application.
+- Run `flutter pub get`
+- Generate Drift code: `flutter pub run build_runner build --delete-conflicting-outputs`
 
-A few resources to get you started if this is your first Flutter project:
+## Default Data
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- The app ensures these default accounts exist when needed:
+  - `Savings` (type: `bank`)
+  - `Credit Card` (type: `creditCard`)
+- Categories default to `Uncategorized` (expense + income) when needed.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Demo Mode
+
+Demo mode helps you try the app quickly with realistic sample data.
+
+- First run: the app prompts you to start with demo data.
+- Settings: toggle demo mode in `Settings → Demo mode`.
+- Exiting demo mode wipes everything (accounts, categories, transactions, transfers) and re-creates the default `Savings` + `Credit Card` accounts.
+
+## Seed Demo Data (Dev)
+
+You can seed the same demo dataset via the tool script:
+
+- `flutter run -t tool/seed_mock_data.dart`
+
+This uses the same seeding logic as the in-app demo mode.
